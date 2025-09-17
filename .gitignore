@@ -1,0 +1,255 @@
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Production
+build
+dist
+expo-export
+web-build
+*.apk
+*.ipa
+*.app
+
+# Expo
+.expo/
+.web/
+.webpack/
+webpack/
+
+# Environment files
+.env*
+.env.*
+
+# Python virtual environments
+venv/
+env/
+ENV/
+.python-version
+
+# Specific project directories
+sih (2)/
+sih/
+
+# Python JAX library
+**/Lib/site-packages/jaxlib/jax_common.dll
+**/jaxlib/**
+**/jax_common.dll
+
+# IDEs and editors
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.swp
+*.swo
+.idea/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Temporary folders
+tmp/
+temp/
+dlls/
+
+# Firebase
+.firebase/
+firestore-debug.log*
+firebase-debug.log*
+
+# React Native
+__tests__/__
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig
+
+# Testing
+coverage/
+.nyc_output/
+
+# Documentation
+docs/.vuepress/dist
+docs/.temp
+
+# Miscellaneous
+*.local
+*.backup
+*.bak
+
+# Large files (over 100MB)
+# Using git-lfs for files over 100MB is recommended instead
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+*.bz2
+*.exe
+*.msi
+*.dmg
+*.iso
+*.vmdk
+*.vdi
+*.qcow2
+*.img
+*.bin
+*.dat
+*.db
+*.log
+*.dump
+*.bak
+*.tmp
+*.cache
+
+# Media files
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.wmv
+*.flv
+*.webm
+*.m4v
+*.mp3
+*.wav
+*.flac
+*.aac
+*.ogg
+*.wma
+
+# Documents
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+
+# Node modules in subdirectories
+**/node_modules/
+
+# Cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Editor directories and files
+.idea
+*.sublime-project
+*.sublime-workspace
+*.sublime-workspace
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Large directories (over 100MB)
+# These directories contain compiled code, dependencies, and large files
+/backend/node_modules/
+/node_modules/
+/backend/venv/
+/uploads/
+/assets/videos/
+/assets/images/
+
+# AI/ML model files (typically large)
+*.h5
+*.hdf5
+*.pkl
+*.joblib
+*.onnx
+*.pt
+*.pth
+*.model
+*.weights
+*.ckpt
+*.bin
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+*.mdb
+*.accdb
+
+# Archive files
+*.7z
+*.s7z
+*.ace
+*.alz
+*.apk
+*.arc
+*.arj
+*.bz2
+*.cab
+*.cpio
+*.deb
+*.dmg
+*.egg
+*.gz
+*.iso
+*.jar
+*.lha
+*.mar
+*.pak
+*.pea
+*.rar
+*.rpm
+*.sda
+*.sea
+*.sit
+*.sitx
+*.tar
+*.tgz
+*.war
+*.whl
+*.xpi
+*.zip
+*.zoo
+
+# Virtual machine files
+*.vmdk
+*.vdi
+*.qcow2
+*.img
+*.bin
+
+# Log files
+*.log
+*.log.*
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Specific large files identified (>50MB)
+# These individual files are too large for version control
+**/cv2.pyd
+**/opencv_world3410.dll
+**/4.pack
