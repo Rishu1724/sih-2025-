@@ -6,5 +6,7 @@
   "https": false,
   "resetCache": true,
   "port": 8081,
-  "minify": false
+  "minify": false,
+  "debugMode": false
 }
+
