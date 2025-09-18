@@ -36,7 +36,7 @@ def run_pushup_analysis(video_path):
         
         # Run the modified script and capture output
         result = subprocess.run([sys.executable, temp_script], 
-                              capture_output=True, text=True, timeout=120)
+                              capture_output=True, text=True, timeout=30)
         
         # Clean up temp file
         if os.path.exists(temp_script):
@@ -93,7 +93,7 @@ def run_situp_analysis(video_path):
         
         # Run the modified script and capture output
         result = subprocess.run([sys.executable, temp_script], 
-                              capture_output=True, text=True, timeout=120)
+                              capture_output=True, text=True, timeout=30)
         
         # Clean up temp file
         if os.path.exists(temp_script):
@@ -148,7 +148,7 @@ def run_vertical_jump_analysis(video_path):
         
         # Run the modified script and capture output
         result = subprocess.run([sys.executable, temp_script], 
-                              capture_output=True, text=True, timeout=120)
+                              capture_output=True, text=True, timeout=30)
         
         # Clean up temp file
         if os.path.exists(temp_script):
@@ -206,7 +206,7 @@ def run_shuttle_run_analysis(video_path):
         
         # Run the modified script and capture output
         result = subprocess.run([sys.executable, temp_script], 
-                              capture_output=True, text=True, timeout=120)
+                              capture_output=True, text=True, timeout=30)
         
         # Clean up temp file
         if os.path.exists(temp_script):
@@ -262,8 +262,9 @@ def main():
         else:
             result = {"error": f"Unsupported assessment type: {assessment_type}"}
         
-        # Output result as JSON
-        print(json.dumps(result))
+        # Ensure the result is valid JSON
+        json_result = json.dumps(result, indent=2)
+        print(json_result)
         
     except Exception as e:
         error_result = {

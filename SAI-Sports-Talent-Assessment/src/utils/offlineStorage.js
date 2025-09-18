@@ -122,18 +122,39 @@ class OfflineStorage {
   }
 
   /**
-   * Save video file locally
+   * Save video file locally with enhanced error handling
    * @param {string} sourceUri - Source URI of the video
    * @param {string} fileName - Name for the saved file
    * @returns {Promise<string|null>} Path to saved file or null
    */
   async saveVideoFile(sourceUri, fileName) {
     try {
+      // Ensure the videos directory exists
+      await this.initialize();
+      
       const targetPath = `${this.VIDEOS_DIR}${fileName}`;
+      
+      // Check if source file exists
+      const sourceInfo = await FileSystem.getInfoAsync(sourceUri);
+      if (!sourceInfo.exists) {
+        console.error('Source video file does not exist:', sourceUri);
+        return null;
+      }
+      
+      // Copy file with better error handling
       await FileSystem.copyAsync({
         from: sourceUri,
         to: targetPath
       });
+      
+      // Verify the file was copied successfully
+      const targetInfo = await FileSystem.getInfoAsync(targetPath);
+      if (!targetInfo.exists) {
+        console.error('Failed to copy video file to:', targetPath);
+        return null;
+      }
+      
+      console.log(`Video file saved successfully to: ${targetPath}`);
       return targetPath;
     } catch (error) {
       console.error('Failed to save video file:', error);

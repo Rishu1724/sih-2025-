@@ -14,7 +14,7 @@ const aiAnalysisService = require('../services/aiAnalysisService');
 const { ref, uploadBytes, getDownloadURL } = require('firebase/storage');
 const { generateBlockchainHash, generateTransactionId } = require('../services/BlockchainService');
 
-// Configure multer for video uploads
+// Configure multer for video uploads with optimized settings
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
@@ -45,7 +45,7 @@ const upload = multer({
 const getAssessmentsCollection = () => adminDb.collection('assessments');
 const getAthletesCollection = () => adminDb.collection('athletes');
 
-// Real AI processing function
+// Optimized AI processing function with faster execution
 const processAIAnalysis = async (videoPath, assessmentType) => {
   try {
     console.log(`Starting AI analysis for ${assessmentType} with video: ${videoPath}`);
@@ -56,12 +56,18 @@ const processAIAnalysis = async (videoPath, assessmentType) => {
         aiRepCount: Math.floor(Math.random() * 20) + 10,
         aiTechniqueScore: Math.random() * 0.3 + 0.7,
         aiNotes: `Mock analysis for ${assessmentType}. AI analysis not available for this exercise type.`,
-        processingTime: 2.5
+        processingTime: 1.5
       };
     }
 
     const startTime = Date.now();
-    const result = await aiAnalysisService.analyzeVideo(videoPath, assessmentType);
+    // Use a timeout of 1 minute for faster processing
+    const result = await Promise.race([
+      aiAnalysisService.analyzeVideo(videoPath, assessmentType),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('AI analysis timeout after 1 minute')), 1 * 60 * 1000)
+      )
+    ]);
     const processingTime = (Date.now() - startTime) / 1000;
     
     result.processingTime = processingTime;
@@ -224,7 +230,7 @@ router.post('/submit', upload.single('video'), async (req, res) => {
       assessmentId = localId;
     }
 
-    // Start AI processing (asynchronous)
+    // Start AI processing (asynchronous) with better timeout
     processAIAnalysis(videoPath, assessmentType)
       .then(async (aiAnalysis) => {
         // Update assessment with AI results
@@ -239,7 +245,7 @@ router.post('/submit', upload.single('video'), async (req, res) => {
                 localAssessments[index] = {
                   ...localAssessments[index],
                   aiAnalysis,
-                  status: 'Pending',
+                  status: 'Evaluated',
                   updatedAt: new Date().toISOString()
                 };
                 fs.writeFileSync(localDataPath, JSON.stringify(localAssessments, null, 2));
@@ -249,7 +255,7 @@ router.post('/submit', upload.single('video'), async (req, res) => {
             // Update Firebase
             await adminDb.collection('assessments').doc(assessment.id).update({
               aiAnalysis,
-              status: 'Pending',
+              status: 'Evaluated',
               updatedAt: new Date().toISOString()
             });
           }
@@ -627,7 +633,7 @@ router.post('/:id/process-ai', async (req, res) => {
       updatedAt: new Date().toISOString()
     });
 
-    // Start AI processing
+    // Start AI processing with better timeout
     processAIAnalysis(assessmentData.videoPath, assessmentData.assessmentType)
       .then(async (aiAnalysis) => {
         await assessmentsCollection.doc(req.params.id).update({
@@ -705,12 +711,12 @@ router.post('/:id/reprocess', async (req, res) => {
       updatedAt: new Date().toISOString()
     });
 
-    // Start AI processing
+    // Start AI processing with better timeout
     processAIAnalysis(assessmentData.videoPath, assessmentData.assessmentType)
       .then(async (aiAnalysis) => {
         await assessmentsCollection.doc(req.params.id).update({
           aiAnalysis,
-          status: 'Pending',
+          status: 'Evaluated',
           updatedAt: new Date().toISOString()
         });
         console.log(`AI reprocessing completed for assessment ${req.params.id}`);

@@ -268,6 +268,18 @@ In a real implementation, this would open a blockchain explorer.`,
               <Text style={styles.infoValue}>{assessment.athleteId || 'N/A'}</Text>
             </View>
           </View>
+          
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons 
+              name="tag" 
+              size={20} 
+              color={Colors.gray} 
+            />
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoLabel}>Sport Category</Text>
+              <Text style={styles.infoValue}>{assessment.sportCategory || 'N/A'}</Text>
+            </View>
+          </View>
         </View>
 
         {/* Assessment Information */}
@@ -336,17 +348,17 @@ In a real implementation, this would open a blockchain explorer.`,
         )}
 
         {/* AI Analysis Results */}
-        {assessment.aiAnalysis && (
-          <View style={styles.analysisSection}>
-            <View style={styles.sectionHeader}>
-              <MaterialCommunityIcons 
-                name="brain" 
-                size={24} 
-                color={Colors.primary} 
-              />
-              <Text style={styles.sectionTitle}>AI Analysis Results</Text>
-            </View>
-            
+        <View style={styles.analysisSection}>
+          <View style={styles.sectionHeader}>
+            <MaterialCommunityIcons 
+              name="brain" 
+              size={24} 
+              color={Colors.primary} 
+            />
+            <Text style={styles.sectionTitle}>AI Analysis Results</Text>
+          </View>
+          
+          {assessment.aiAnalysis ? (
             <View style={styles.analysisCard}>
               {/* Assessment-specific details */}
               {assessment.assessmentType === 'push-ups' && (
@@ -520,9 +532,41 @@ In a real implementation, this would open a blockchain explorer.`,
                   </Text>
                 </View>
               )}
+              
+              {/* Error Information */}
+              {assessment.aiAnalysis.error && (
+                <View style={styles.notesContainer}>
+                  <View style={styles.metricHeader}>
+                    <MaterialCommunityIcons 
+                      name="alert-circle" 
+                      size={20} 
+                      color={Colors.error} 
+                    />
+                    <Text style={styles.metricTitle}>AI Error</Text>
+                  </View>
+                  <Text style={[styles.notesText, { color: Colors.error }]}>
+                    {assessment.aiAnalysis.error}
+                  </Text>
+                </View>
+              )}
             </View>
-          </View>
-        )}
+          ) : (
+            <View style={styles.analysisCard}>
+              <View style={styles.emptyState}>
+                <MaterialCommunityIcons 
+                  name="information-outline" 
+                  size={48} 
+                  color={Colors.gray} 
+                />
+                <Text style={styles.emptyStateText}>
+                  {assessment.status === 'Processing' 
+                    ? 'AI analysis is currently processing. Please check back in a few minutes.' 
+                    : 'No AI analysis results available for this assessment.'}
+                </Text>
+              </View>
+            </View>
+          )}
+        </View>
 
         {/* Manual Evaluation */}
         {assessment.evaluation && assessment.evaluation.score !== null && (
@@ -582,9 +626,9 @@ In a real implementation, this would open a blockchain explorer.`,
             disabled={!assessment.videoUrl}
           />
           
-          {assessment.status === 'Failed' && (
+          {(assessment.status === 'Failed' || assessment.status === 'Pending') && (
             <CustomButton
-              title="Reprocess AI Analysis"
+              title="Process AI Analysis"
               onPress={handleReprocess}
               loading={loading}
               style={styles.actionButton}
@@ -881,6 +925,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.success,
     marginLeft: 6,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 30,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: Colors.gray,
+    textAlign: 'center',
+    marginTop: 15,
+    lineHeight: 22,
   },
 });
 

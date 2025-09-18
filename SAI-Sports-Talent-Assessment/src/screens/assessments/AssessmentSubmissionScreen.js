@@ -151,6 +151,26 @@ const AssessmentSubmissionScreen = ({ route, navigation }) => {
                 { id: '3', name: 'Virat Kohli', email: 'virat.kohli@example.com', sport: 'Cricket', age: 28, state: 'Delhi', district: 'New Delhi' },
                 { id: '4', name: 'Mithali Raj', email: 'mithali.raj@example.com', sport: 'Cricket', age: 26, state: 'Tamil Nadu', district: 'Chennai' }
               ]
+            },
+            {
+              label: 'OBC',
+              value: 'OBC',
+              athletes: []
+            },
+            {
+              label: 'SC',
+              value: 'SC',
+              athletes: []
+            },
+            {
+              label: 'ST',
+              value: 'ST',
+              athletes: []
+            },
+            {
+              label: 'Other',
+              value: 'Other',
+              athletes: []
             }
           ];
           
@@ -355,7 +375,12 @@ const AssessmentSubmissionScreen = ({ route, navigation }) => {
         if (formData.videoFile) {
           const fileName = `assessment_${Date.now()}_${formData.videoFile.name}`;
           localVideoPath = await offlineStorage.saveVideoFile(formData.videoFile.uri, fileName);
-          assessmentData.localVideoPath = localVideoPath;
+          if (localVideoPath) {
+            assessmentData.localVideoPath = localVideoPath;
+            console.log(`Video saved locally at: ${localVideoPath}`);
+          } else {
+            console.warn('Failed to save video locally');
+          }
         }
         
         // Save assessment to local storage with Firebase ID
@@ -427,7 +452,7 @@ const AssessmentSubmissionScreen = ({ route, navigation }) => {
       }
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // Reduced timeout to 15 seconds for faster failure
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // Reduced timeout to 10 seconds for faster failure
       
       const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ASSESSMENT_SUBMIT}`, {
         method: 'POST',
@@ -998,231 +1023,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Colors.lightGray,
     borderStyle: 'dashed',
-    borderRadius: 16,
-    padding: 35,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  videoUploadText: {
-    fontSize: 18,
-    color: Colors.primary,
-    fontWeight: '600',
-    marginTop: 12,
-  },
-  videoFileName: {
-    fontSize: 14,
-    color: Colors.gray,
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  videoUploadHint: {
-    fontSize: 14,
-    color: Colors.gray,
-    textAlign: 'center',
-    marginTop: 10,
-  },
-  submitButton: {
-    marginTop: 25,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  successMessageContainer: {
-    backgroundColor: Colors.success,
-    paddingVertical: 16,
-    paddingHorizontal: 25,
-    marginHorizontal: 20,
-    borderRadius: 16,
-    marginBottom: 15,
-    shadowColor: Colors.success,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  successMessageContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  successMessageText: {
-    color: Colors.white,
-    fontSize: 18,
-    fontWeight: '600',
-    marginLeft: 12,
-  },
-  assessmentInfo: {
-    backgroundColor: Colors.background,
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.primary + '30',
-    marginTop: 15,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  assessmentInfoTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.primary,
-    marginBottom: 10,
-  },
-  assessmentInfoText: {
-    fontSize: 16,
-    color: Colors.text,
-    marginBottom: 8,
-    lineHeight: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  
-  generateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 14,
-    minHeight: 40,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  
-  generateButtonText: {
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 6,
-  },
-  
-  blockchainInfoContainer: {
-    backgroundColor: Colors.background,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.primary + '30',
-    padding: 20,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  
-  blockchainInfo: {
-    marginBottom: 15,
-  },
-  
-  blockchainRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  
-  blockchainLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.text,
-    marginLeft: 10,
-  },
-  
-  blockchainValue: {
-    fontSize: 14,
-    color: Colors.text,
-    backgroundColor: Colors.white,
-    padding: 12,
-    borderRadius: 10,
-    fontFamily: 'monospace',
-    borderWidth: 1,
-    borderColor: Colors.lightGray,
-    overflow: 'hidden',
-  },
-  
-  blockchainStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 15,
-    paddingTop: 15,
-    borderTopWidth: 1,
-    borderTopColor: Colors.lightGray,
-    justifyContent: 'center',
-  },
-  
-  blockchainStatusText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.success,
-    marginLeft: 8,
-  },
-  
-  verifyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.info,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 14,
-    marginTop: 20,
-    justifyContent: 'center',
-    shadowColor: Colors.info,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  
-  verifyButtonText: {
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  
-  blockchainPlaceholder: {
-    backgroundColor: Colors.background,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.lightGray,
-    padding: 25,
-    alignItems: 'center',
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  
-  blockchainPlaceholderText: {
-    fontSize: 16,
-    color: Colors.text,
-    textAlign: 'center',
-    marginTop: 15,
-    fontWeight: '600',
-    lineHeight: 24,
-  },
-  
-  blockchainPlaceholderSubtext: {
-    fontSize: 14,
-    color: Colors.gray,
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 20,
   },
 });
 

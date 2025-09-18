@@ -5,7 +5,7 @@
 import { API_CONFIG } from '../config/api';
 
 /**
- * Test network connectivity to backend
+ * Test network connectivity to backend with faster timeout
  * @returns {Promise<{success: boolean, baseUrl: string}>}
  */
 export const testNetworkConnectivity = async () => {
@@ -17,14 +17,14 @@ export const testNetworkConnectivity = async () => {
   
   // Add a simple timeout-based check for faster failure on mobile
   const timeoutPromise = new Promise((resolve) => {
-    setTimeout(() => resolve({ success: false, baseUrl: API_CONFIG.BASE_URL }), 1500); // Reduced from 3000 to 1500ms
+    setTimeout(() => resolve({ success: false, baseUrl: API_CONFIG.BASE_URL }), 1000); // Reduced from 1500 to 1000ms
   });
   
   // Create network test promises with shorter timeouts
   const networkTestPromises = urlsToTry.map(async (url) => {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1000); // Reduced from 2000 to 1000ms
+      const timeoutId = setTimeout(() => controller.abort(), 500); // Reduced from 1000 to 500ms
       
       const response = await fetch(url, {
         method: 'GET',
@@ -68,7 +68,7 @@ export const testNetworkConnectivity = async () => {
 };
 
 /**
- * Make a network request with fallback
+ * Make a network request with fallback and faster timeout
  * @param {string} endpoint - API endpoint
  * @param {Object} options - Fetch options
  * @returns {Promise<Response>}
@@ -91,7 +91,7 @@ export const makeNetworkRequest = async (endpoint, options = {}) => {
   const url = `${API_CONFIG.BASE_URL}${endpoint}`;
   
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), options.timeout || 15000); // Reduced from 30000 to 15000ms
+  const timeoutId = setTimeout(() => controller.abort(), options.timeout || 10000); // Reduced from 15000 to 10000ms
   
   try {
     const response = await fetch(url, {

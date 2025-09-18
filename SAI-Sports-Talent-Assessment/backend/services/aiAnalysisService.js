@@ -51,7 +51,7 @@ class AIAnalysisService {
       console.log(`Video: ${videoPath}`);
       console.log(`Wrapper: ${wrapperPath}`);
 
-      // Spawn Python process with wrapper
+      // Spawn Python process with wrapper and reduced timeout (1 minute for faster processing)
       const pythonProcess = spawn('python', [wrapperPath, videoPath, assessmentType], {
         stdio: ['pipe', 'pipe', 'pipe']
       });
@@ -76,11 +76,19 @@ class AIAnalysisService {
         
         if (code === 0) {
           try {
-            const result = JSON.parse(stdout);
+            // Ensure we have valid JSON output
+            const trimmedOutput = stdout.trim();
+            if (!trimmedOutput) {
+              reject(new Error('AI analysis returned empty output'));
+              return;
+            }
+            
+            const result = JSON.parse(trimmedOutput);
             const processedResult = this.processAnalysisResult(result, assessmentType);
             resolve(processedResult);
           } catch (parseError) {
             console.error('Error parsing AI analysis output:', parseError);
+            console.error('Raw output:', stdout);
             reject(new Error(`Failed to parse AI analysis results: ${parseError.message}`));
           }
         } else {
@@ -94,11 +102,11 @@ class AIAnalysisService {
         reject(new Error(`Failed to start AI analysis: ${error.message}`));
       });
 
-      // Set timeout (5 minutes)
+      // Set timeout (1 minute for faster processing)
       setTimeout(() => {
         pythonProcess.kill();
-        reject(new Error('AI analysis timeout after 5 minutes'));
-      }, 5 * 60 * 1000);
+        reject(new Error('AI analysis timeout after 1 minute'));
+      }, 1 * 60 * 1000);
     });
   }
 
@@ -242,4 +250,3 @@ class AIAnalysisService {
 }
 
 module.exports = new AIAnalysisService();
-

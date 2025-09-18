@@ -63,7 +63,8 @@ export const getAthletes = async (filters = {}) => {
     return athletes;
   } catch (error) {
     console.error('Error getting athletes:', error);
-    throw new Error('Failed to get athletes');
+    // Return empty array instead of throwing to prevent app crashes
+    return [];
   }
 };
 
@@ -168,16 +169,21 @@ export const getAssessments = async (filters = {}) => {
     const assessments = [];
     
     querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      // Ensure consistent data structure
       assessments.push({
         id: doc.id,
-        ...doc.data()
+        ...data,
+        // Ensure createdAt is properly formatted
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt || new Date()
       });
     });
     
     return assessments;
   } catch (error) {
     console.error('Error getting assessments:', error);
-    throw new Error('Failed to get assessments');
+    // Return empty array instead of throwing to prevent app crashes
+    return [];
   }
 };
 

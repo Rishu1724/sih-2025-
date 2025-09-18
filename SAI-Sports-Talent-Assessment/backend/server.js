@@ -12,6 +12,7 @@ const athleteRoutes = require('./routes/athletes');
 const assessmentRoutes = require('./routes/assessments');
 const otpRoutes = require('./routes/otp');
 const uploadRoutes = require('./routes/uploads');
+const userDashboardRoutes = require('./routes/userDashboard');
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use('/api/athletes', athleteRoutes);
 app.use('/api/assessments', assessmentRoutes);
 app.use('/api/otp', otpRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/user-dashboard', userDashboardRoutes);
 
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -61,7 +63,8 @@ app.get('/', (req, res) => {
       assessments: '/api/assessments',
       otp: '/api/otp',
       uploads: '/api/uploads',
-      health: '/api/health'
+      health: '/api/health',
+      'user-dashboard': '/api/user-dashboard'
     }
   });
 });

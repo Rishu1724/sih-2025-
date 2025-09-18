@@ -15,14 +15,18 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import CustomCard from '../../components/CustomCard';
 import CustomButton from '../../components/CustomButton';
+import DashboardViewToggle from '../../components/DashboardViewToggle';
 import { Colors, Gradients } from '../../constants/colors';
 import { API_CONFIG, testApiConnectivity } from '../../config/api';
 import { getAthletes, getAssessments } from '../../services/FirebaseService';
 import { TEST_CONFIG } from '../../constants/tests';
+import { useAuth } from '../../contexts/AuthContext';
+import { getUserDashboardStats, calculateAndUpdateUserStats, getUserDashboardSettings, updateUserDashboardSettings } from '../../services/UserDashboardService';
 
 const { width } = Dimensions.get('window');
 
 const DashboardScreen = ({ navigation }) => {
+  const { user } = useAuth();
   const [stats, setStats] = useState({
     totalAthletes: 0,
     totalAssessments: 0,
@@ -33,16 +37,17 @@ const DashboardScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [networkError, setNetworkError] = useState(false);
   const [processingAssessment, setProcessingAssessment] = useState(null);
+  const [userSettings, setUserSettings] = useState({ overviewType: 'personal' });
 
   useEffect(() => {
     console.log('DashboardScreen mounted, fetching data...');
     fetchDashboardData();
     
-    // Set up interval to refresh data every 30 seconds
+    // Set up interval to refresh data every 15 seconds (faster refresh)
     const interval = setInterval(() => {
       console.log('Refreshing dashboard data...');
       fetchDashboardData();
-    }, 30000);
+    }, 15000);
     
     // Clean up interval on unmount
     return () => {
@@ -51,6 +56,42 @@ const DashboardScreen = ({ navigation }) => {
     };
   }, []);
 
+  useEffect(() => {
+    // Load user-specific settings
+    if (user?.uid) {
+      loadUserSettings();
+    }
+  }, [user]);
+
+  const loadUserSettings = async () => {
+    try {
+      const settings = await getUserDashboardSettings(user.uid);
+      setUserSettings(settings);
+    } catch (error) {
+      console.log('Error loading user settings:', error);
+      // Use default settings if there's an error
+      setUserSettings({ overviewType: 'personal' });
+    }
+  };
+
+  const handleViewChange = async (viewType) => {
+    try {
+      const updatedSettings = await updateUserDashboardSettings(user.uid, {
+        ...userSettings,
+        overviewType: viewType
+      });
+      
+      if (updatedSettings.success) {
+        setUserSettings(updatedSettings.data);
+        // Refresh dashboard data to reflect the new view
+        await fetchDashboardData(true);
+      }
+    } catch (error) {
+      console.log('Error updating view settings:', error);
+      Alert.alert('Error', 'Failed to update dashboard view settings. You may be offline.');
+    }
+  };
+
   const fetchDashboardData = async (forceRefresh = false) => {
     try {
       setLoading(true);
@@ -58,108 +99,160 @@ const DashboardScreen = ({ navigation }) => {
       
       console.log('Fetching dashboard data...', { forceRefresh });
       
-      // Test API connectivity first
-      const isApiReachable = await testApiConnectivity();
-      console.log('API connectivity test result:', isApiReachable);
+      // For authenticated users, try to get personalized stats first
+      if (user?.uid && userSettings.overviewType === 'personal') {
+        try {
+          const userStats = await getUserDashboardStats(user.uid, user.email);
+          // If we have recent user stats, use them
+          if (userStats.lastUpdated && new Date(userStats.lastUpdated) > new Date(Date.now() - 5 * 60 * 1000)) { // 5 minutes
+            setStats({
+              totalAthletes: userStats.totalAthletes || 0,
+              totalAssessments: userStats.totalAssessments || 0,
+              pendingEvaluations: userStats.pendingEvaluations || 0,
+              completedToday: userStats.completedToday || 0,
+            });
+          }
+        } catch (userStatsError) {
+          console.log('Error fetching user stats:', userStatsError);
+        }
+      }
+      
+      // Test API connectivity first with improved error handling
+      let isApiReachable = false;
+      try {
+        isApiReachable = await testApiConnectivity();
+        console.log('API connectivity test result:', isApiReachable);
+      } catch (connectivityError) {
+        console.log('API connectivity test failed:', connectivityError.message);
+        isApiReachable = false;
+      }
+      
+      let athletes = [];
+      let assessments = [];
       
       if (isApiReachable) {
         console.log('Attempting to fetch from API...');
-        // Fetch athletes with timeout
-        const athletesController = new AbortController();
-        const athletesTimeout = setTimeout(() => athletesController.abort(), API_CONFIG.TIMEOUT || 10000);
-        const athletesResponse = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ATHLETES}`, {
-          signal: athletesController.signal,
-          headers: {
-            'Content-Type': 'application/json',
+        try {
+          // Fetch athletes with timeout and better error handling
+          try {
+            const athletesController = new AbortController();
+            const athletesTimeout = setTimeout(() => athletesController.abort(), API_CONFIG.TIMEOUT || 8000);
+            const athletesResponse = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ATHLETES}`, {
+              signal: athletesController.signal,
+              headers: {
+                'Content-Type': 'application/json',
+              }
+            });
+            clearTimeout(athletesTimeout);
+            
+            if (athletesResponse.ok) {
+              const athletesResult = await athletesResponse.json();
+              if (athletesResult.success) {
+                athletes = athletesResult.data || [];
+                console.log(`API Athletes: ${athletes.length}`);
+              }
+            }
+          } catch (athleteError) {
+            console.log('API athlete fetch failed:', athleteError.message);
           }
-        });
-        clearTimeout(athletesTimeout);
-        const athletesResult = await athletesResponse.json();
-        
-        // Fetch assessments with timeout
-        const assessmentsController = new AbortController();
-        const assessmentsTimeout = setTimeout(() => assessmentsController.abort(), API_CONFIG.TIMEOUT || 10000);
-        const assessmentsResponse = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ASSESSMENTS}`, {
-          signal: assessmentsController.signal,
-          headers: {
-            'Content-Type': 'application/json',
+          
+          // Fetch assessments with timeout and better error handling
+          try {
+            const assessmentsController = new AbortController();
+            const assessmentsTimeout = setTimeout(() => assessmentsController.abort(), API_CONFIG.TIMEOUT || 8000);
+            const assessmentsResponse = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ASSESSMENTS}`, {
+              signal: assessmentsController.signal,
+              headers: {
+                'Content-Type': 'application/json',
+              }
+            });
+            clearTimeout(assessmentsTimeout);
+            
+            if (assessmentsResponse.ok) {
+              const assessmentsResult = await assessmentsResponse.json();
+              if (assessmentsResult.success) {
+                assessments = assessmentsResult.data || [];
+                console.log(`API Assessments: ${assessments.length}`);
+                console.log('API Assessments:', assessments);
+              }
+            }
+          } catch (assessmentError) {
+            console.log('API assessment fetch failed:', assessmentError.message);
           }
-        });
-        clearTimeout(assessmentsTimeout);
-        const assessmentsResult = await assessmentsResponse.json();
-        
-        if (athletesResult.success && assessmentsResult.success) {
-          const athletes = athletesResult.data || [];
-          const assessments = assessmentsResult.data || [];
-          
-          console.log(`API Data - Athletes: ${athletes.length}, Assessments: ${assessments.length}`);
-          console.log('API Assessments:', assessments);
-          
-          const pendingEvaluations = assessments.filter(a => a.status === 'Pending' || a.status === 'Processing').length;
-          const today = new Date().toDateString();
-          const completedToday = assessments.filter(a => 
-            new Date(a.submissionDate || a.createdAt).toDateString() === today
-          ).length;
-          
-          setStats({
-            totalAthletes: athletes.length,
-            totalAssessments: assessments.length,
-            pendingEvaluations,
-            completedToday,
-          });
-          
-          // Set recent activities (sort by submission date or creation date)
-          const recent = assessments
-            .sort((a, b) => {
-              const dateA = new Date(a.submissionDate || a.createdAt);
-              const dateB = new Date(b.submissionDate || b.createdAt);
-              return dateB - dateA;
-            })
-            .slice(0, 5);
-          
-          console.log('Recent activities from API:', recent);
-          setRecentActivities(recent);
-          
-          return; // Success, no need to fallback
-        } else {
-          console.log('API request failed, status not successful');
-          console.log('Athletes result success:', athletesResult.success);
-          console.log('Assessments result success:', assessmentsResult.success);
+        } catch (apiError) {
+          console.log('API fetch failed, falling back to Firebase:', apiError.message);
         }
-      } else {
-        console.log('API is not reachable, falling back to Firebase');
-        setNetworkError(true);
       }
       
-      // Fallback to Firebase if API fails or is unreachable
-      console.log('Fetching data from Firebase...');
-      const athletes = await getAthletes().catch(error => {
-        console.error('Firebase athletes fetch error:', error);
-        return [];
-      });
-      const assessments = await getAssessments().catch(error => {
-        console.error('Firebase assessments fetch error:', error);
-        return [];
-      });
+      // Always try to fetch from Firebase to ensure data accuracy
+      try {
+        // Fetch athletes from Firebase (critical for athlete count)
+        console.log('Fetching athletes from Firebase...');
+        const firebaseAthletes = await getAthletes();
+        console.log(`Firebase Athletes: ${firebaseAthletes.length}`);
+        
+        // Only use Firebase athletes if we didn't get athletes from API or if API failed
+        if (athletes.length === 0 || !isApiReachable) {
+          athletes = firebaseAthletes;
+        }
+        
+        // Fetch assessments from Firebase if not fetched from API
+        if (assessments.length === 0 || !isApiReachable) {
+          console.log('Fetching assessments from Firebase...');
+          const firebaseAssessments = await getAssessments();
+          console.log(`Firebase Assessments: ${firebaseAssessments.length}`);
+          assessments = firebaseAssessments;
+        }
+      } catch (firebaseError) {
+        console.error('Firebase fetch error:', firebaseError);
+        // Only set network error if we have no data at all
+        if (athletes.length === 0 && assessments.length === 0) {
+          setNetworkError(true);
+        }
+      }
       
-      console.log(`Firebase Data - Athletes: ${athletes.length}, Assessments: ${assessments.length}`);
-      console.log('Firebase Assessments:', assessments);
+      // Ensure we always have athlete data
+      if (athletes.length === 0) {
+        console.log('Warning: No athlete data available from any source');
+        // Try one more time to get athletes from Firebase
+        try {
+          athletes = await getAthletes();
+          console.log(`Second attempt Firebase Athletes: ${athletes.length}`);
+        } catch (retryError) {
+          console.log('Second Firebase athlete fetch failed:', retryError.message);
+        }
+      }
       
-      const pendingEvaluations = assessments.filter(a => a.status === 'Pending' || a.status === 'Processing').length;
+      // Calculate statistics
+      const totalAthletes = athletes.length;
+      const totalAssessments = assessments.length;
+      const pendingEvaluations = assessments.filter(a => 
+        a.status === 'Pending' || a.status === 'Processing'
+      ).length;
+      
       const today = new Date().toDateString();
       const completedToday = assessments.filter(a => 
         new Date(a.submissionDate || a.createdAt?.toDate?.() || a.createdAt).toDateString() === today
       ).length;
       
+      // Update user-specific stats if user is authenticated and viewing personal stats
+      if (user?.uid && userSettings.overviewType === 'personal') {
+        try {
+          await calculateAndUpdateUserStats(user.uid, user.email);
+        } catch (updateError) {
+          console.log('Error updating user stats:', updateError);
+        }
+      }
+      
       setStats({
-        totalAthletes: athletes.length,
-        totalAssessments: assessments.length,
+        totalAthletes,
+        totalAssessments,
         pendingEvaluations,
         completedToday,
       });
       
       // Set recent activities (sort by submission date or creation date)
-      const recent = assessments
+      const recent = [...assessments]
         .sort((a, b) => {
           const dateA = new Date(a.submissionDate || a.createdAt?.toDate?.() || a.createdAt);
           const dateB = new Date(b.submissionDate || b.createdAt?.toDate?.() || b.createdAt);
@@ -167,7 +260,7 @@ const DashboardScreen = ({ navigation }) => {
         })
         .slice(0, 5);
       
-      console.log('Recent activities from Firebase:', recent);
+      console.log('Recent activities:', recent);
       setRecentActivities(recent);
     } catch (error) {
       console.error('Dashboard data fetch error:', error);
@@ -178,14 +271,17 @@ const DashboardScreen = ({ navigation }) => {
         'Unable to fetch dashboard data. Please check your internet connection and try again.',
         [{ text: 'OK' }]
       );
-      // Set default values to prevent UI issues
-      setStats({
-        totalAthletes: 0,
-        totalAssessments: 0,
-        pendingEvaluations: 0,
-        completedToday: 0,
-      });
-      setRecentActivities([]);
+      // Set default values to prevent UI issues but preserve existing data if available
+      setStats(prevStats => ({
+        totalAthletes: prevStats.totalAthletes || 0,
+        totalAssessments: prevStats.totalAssessments || 0,
+        pendingEvaluations: prevStats.pendingEvaluations || 0,
+        completedToday: prevStats.completedToday || 0,
+      }));
+      // Only clear recent activities if we have no data at all
+      if (recentActivities.length === 0) {
+        setRecentActivities([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -230,14 +326,14 @@ const DashboardScreen = ({ navigation }) => {
       const result = await response.json();
       
       if (result.success) {
-        // Poll for assessment updates until processing is complete
+        // Poll for assessment updates until processing is complete with faster polling
         const pollForUpdates = async () => {
           try {
             // Wait a bit before first check
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Reduced from 2000 to 1000ms
             
-            // Poll for updates every 2 seconds for up to 2 minutes
-            for (let i = 0; i < 60; i++) {
+            // Poll for updates every 500ms for up to 2 minutes (faster and shorter)
+            for (let i = 0; i < 240; i++) { // Increased iterations for 2 minutes at 500ms intervals
               const updateResponse = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ASSESSMENTS}/${assessment.id}`);
               const updateResult = await updateResponse.json();
               
@@ -255,8 +351,8 @@ const DashboardScreen = ({ navigation }) => {
                 }
               }
               
-              // Wait before next poll
-              await new Promise(resolve => setTimeout(resolve, 2000));
+              // Wait before next poll (faster polling)
+              await new Promise(resolve => setTimeout(resolve, 500)); // Reduced from 1000 to 500ms
             }
             
             // If we get here, processing took too long
@@ -449,7 +545,10 @@ const DashboardScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <LinearGradient colors={Gradients.primary} style={styles.headerGradient}>
+        <LinearGradient 
+          colors={Gradients.primary && Gradients.primary.length >= 2 ? Gradients.primary : ['#1976D2', '#1565C0']} 
+          style={styles.headerGradient}
+        >
           <View style={styles.header}>
             <View style={styles.headerContent}>
               <MaterialCommunityIcons
@@ -491,6 +590,14 @@ const DashboardScreen = ({ navigation }) => {
         )}
 
         <View style={styles.content}>
+          {/* View Toggle for authenticated users */}
+          {user?.uid && (
+            <DashboardViewToggle 
+              currentView={userSettings.overviewType || 'personal'}
+              onViewChange={handleViewChange}
+            />
+          )}
+
           {/* Statistics */}
           <View style={styles.statsSection}>
             <Text style={styles.sectionTitle}>Overview Statistics</Text>
@@ -533,7 +640,7 @@ const DashboardScreen = ({ navigation }) => {
                   onPress={action.onPress}
                 >
                   <LinearGradient
-                    colors={[action.color, action.color + '80']}
+                    colors={action.color ? [action.color, action.color + '80'] : [Colors.primary, Colors.primary + '80']}
                     style={styles.actionGradient}
                   >
                     <MaterialCommunityIcons
